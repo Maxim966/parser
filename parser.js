@@ -19,6 +19,19 @@ async function parser() {
 	});
 
 	await page.waitForSelector('body', { timeout: 10000 });
+
+	await closeCookieBanner(page);
+}
+
+async function closeCookieBanner(page) {
+	await page.waitForSelector('.cookie-notification', {
+		timeout: 5000,
+		visible: true,
+	});
+
+	await page.$eval('[aria-label="Accept all cookies"]', element =>
+		element.click()
+	);
 }
 
 parser();
