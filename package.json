@@ -1,0 +1,11 @@
+{
+	"name": "djari-parser",
+	"version": "1.0.0",
+	"scripts": {
+		"start": "node parser.js"
+	},
+	"dependencies": {
+		"puppeteer": "^24.17.0"
+	},
+	"type": "module"
+}
