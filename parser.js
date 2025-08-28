@@ -1,6 +1,7 @@
 import puppeteer from 'puppeteer';
 
 async function parser() {
+	const arrProducts = [];
 	const browser = await puppeteer.launch({
 		headless: false,
 	});
@@ -28,6 +29,10 @@ async function parser() {
 	await closeModalIfExists(page, 'Внимание', 'Хорошо', 3);
 
 	delay(2000);
+
+	const parseProductArrMoscow = await parseProductsByCategory(page);
+	arrProducts.push(...parseProductArrMoscow);
+	console.log(JSON.stringify(arrProducts, null, 2));
 }
 
 async function closeCookieBanner(page) {
@@ -144,6 +149,56 @@ async function closeModalIfExists(page, title, nameButton, maxAttempts = 3) {
 	} else {
 		console.log(`Пропускаем модальное окно "${title}"`);
 	}
+}
+
+async function getProduction(page) {
+	const arr = [];
+
+	const production = await page.$$('.production__item');
+
+	for (let index = 0; index < production.length; index++) {
+		const title = await production[index].$eval(
+			'.production__item-title',
+			element => element.textContent
+		);
+		const price = await production[index].$eval(
+			'.price-value',
+			element => element.textContent
+		);
+		arr.push({ name: title, price: price });
+	}
+	return arr;
+}
+
+async function parseProductsByCategory(page) {
+	const allProducts = [];
+	try {
+		await page.waitForSelector('.categories-list', {
+			timeout: 10000,
+			visible: true,
+		});
+
+		const listMenu = await page.$$('.filter-category__item');
+		console.log('Начался парсинг товаров...');
+
+		for (let i = 0; i < listMenu.length; i++) {
+			await page.evaluate(index => {
+				const items = document.querySelectorAll('.filter-category__item');
+				if (items[index]) {
+					items[index].click();
+				}
+			}, i);
+			await delay(1000);
+
+			const categoryProducts = await getProduction(page);
+			allProducts.push(...categoryProducts);
+		}
+	} catch (error) {
+		console.log('Ошибка при парсинге категорий:', error.message);
+	}
+
+	console.log(`Всего собрано: ${allProducts.length} товаров`);
+	return allProducts;
 }
 
 parser();
