@@ -39,6 +39,12 @@ async function parser() {
 		timeout: 10000,
 	});
 
+	await closeModalIfExists(page, 'Выберите способ доставки', 'Самовывоз', 3);
+	await closeModalIfExists(page, 'Внимание', 'Хорошо', 3);
+
+	const parseProductArr = await parseProductsByCategory(page);
+
+	arrProducts.push(...parseProductArr);
 	const allProducts = uniqueArray(arrProducts);
 	console.log(`Всего товаров: ${allProducts.length}`);
 }
