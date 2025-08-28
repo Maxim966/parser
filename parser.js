@@ -21,6 +21,8 @@ async function parser() {
 	await page.waitForSelector('body', { timeout: 10000 });
 
 	await closeCookieBanner(page);
+
+	delay(1000);
 }
 
 async function closeCookieBanner(page) {
@@ -32,6 +34,10 @@ async function closeCookieBanner(page) {
 	await page.$eval('[aria-label="Accept all cookies"]', element =>
 		element.click()
 	);
+}
+
+function delay(ms) {
+	return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 parser();
