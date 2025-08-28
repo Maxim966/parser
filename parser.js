@@ -1,4 +1,10 @@
+import fs from 'fs';
+import path, { dirname } from 'path';
 import puppeteer from 'puppeteer';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 async function parser() {
 	const arrProducts = [];
@@ -47,6 +53,10 @@ async function parser() {
 	arrProducts.push(...parseProductArr);
 	const allProducts = uniqueArray(arrProducts);
 	console.log(`Всего товаров: ${allProducts.length}`);
+	saveProduct(allProducts);
+
+	delay(3000);
+	await browser.close();
 }
 
 async function closeCookieBanner(page) {
@@ -270,6 +280,20 @@ function uniqueArray(array) {
 		a.add(key);
 		return true;
 	});
+}
+
+function saveProduct(products, filename = 'products.json') {
+	fs.promises
+		.writeFile(
+			path.join(__dirname, filename),
+			JSON.stringify(products, null, 2)
+		)
+		.then(() => {
+			console.log(`Данные сохранены в ${filename}`);
+		})
+		.catch(error => {
+			console.log('Ошибка сохранения:', error.message);
+		});
 }
 
 parser();
