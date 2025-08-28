@@ -23,6 +23,11 @@ async function parser() {
 	await closeCookieBanner(page);
 
 	delay(1000);
+
+	await modalHandler(page, 'Выберите способ доставки', 'Самовывоз');
+	await modalHandler(page, 'Внимание', 'Хорошо');
+
+	delay(2000);
 }
 
 async function closeCookieBanner(page) {
@@ -38,6 +43,49 @@ async function closeCookieBanner(page) {
 
 function delay(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function modalHandler(page, title, nameButton) {
+	try {
+		await page.waitForSelector(`xpath=//*[contains(text(), "${title}")]`, {
+			timeout: 5000,
+			visible: true,
+		});
+
+		const element = await page.$(`xpath=//*[contains(text(), "${title}")]`);
+
+		const clicked = await page.evaluate(
+			(el, btnName) => {
+				const modal = el.closest('.custom-modal, .modal-content, .modal');
+				if (modal) {
+					const buttons = modal.querySelectorAll('button');
+					for (let btn of buttons) {
+						const text = btn.textContent.trim();
+						const ariaLabel = btn.getAttribute('aria-label');
+						if (
+							text === btnName ||
+							(ariaLabel && ariaLabel.includes(btnName))
+						) {
+							btn.click();
+							return true;
+						}
+					}
+				}
+				return false;
+			},
+			element,
+			nameButton
+		);
+
+		if (clicked) {
+			await delay(500);
+			return true;
+		} else {
+			return false;
+		}
+	} catch (error) {
+		console.log(`Модальное окно "${title}" не найдено или уже закрыто`);
+	}
 }
 
 parser();
