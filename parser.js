@@ -24,8 +24,8 @@ async function parser() {
 
 	delay(1000);
 
-	await modalHandler(page, 'Выберите способ доставки', 'Самовывоз');
-	await modalHandler(page, 'Внимание', 'Хорошо');
+	await closeModalIfExists(page, 'Выберите способ доставки', 'Самовывоз', 3);
+	await closeModalIfExists(page, 'Внимание', 'Хорошо', 3);
 
 	delay(2000);
 }
@@ -85,6 +85,64 @@ async function modalHandler(page, title, nameButton) {
 		}
 	} catch (error) {
 		console.log(`Модальное окно "${title}" не найдено или уже закрыто`);
+	}
+}
+
+async function modalHandlerWithRetry(page, title, nameButton, maxAttempts = 3) {
+	for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+		try {
+			console.log(`Попытка ${attempt}/${maxAttempts}: "${title}"`);
+
+			const handled = await modalHandler(page, title, nameButton);
+			if (handled) {
+				return true;
+			}
+		} catch (error) {
+			console.log(`Попытка ${attempt} не удалась: ${error.message}`);
+		}
+
+		if (attempt < maxAttempts) {
+			await delay(1000);
+		}
+	}
+
+	return false;
+}
+
+async function waitForModalToClose(page) {
+	try {
+		const modalExists = (await page.$('.custom-modal')) !== null;
+
+		if (!modalExists) {
+			console.log('Модальное окно уже закрыто/не найдено');
+			return true;
+		}
+
+		await page.waitForSelector('.custom-modal', {
+			hidden: true,
+			timeout: 3000,
+		});
+		console.log('Модальное окно закрыто');
+		return true;
+	} catch (error) {
+		console.log('Модальное окно не найдено или уже закрыто');
+		return false;
+	}
+}
+
+async function closeModalIfExists(page, title, nameButton, maxAttempts = 3) {
+	const handler = await modalHandlerWithRetry(
+		page,
+		title,
+		nameButton,
+		maxAttempts
+	);
+
+	if (handler) {
+		await waitForModalToClose(page);
+		console.log(`Модальное окно "${title}" успешно закрыто`);
+	} else {
+		console.log(`Пропускаем модальное окно "${title}"`);
 	}
 }
 
