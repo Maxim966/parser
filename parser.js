@@ -32,7 +32,15 @@ async function parser() {
 
 	const parseProductArrMoscow = await parseProductsByCategory(page);
 	arrProducts.push(...parseProductArrMoscow);
-	console.log(JSON.stringify(arrProducts, null, 2));
+
+	await switchCityAndClose(page);
+
+	await page.waitForSelector('.categories-list', {
+		timeout: 10000,
+	});
+
+	const allProducts = uniqueArray(arrProducts);
+	console.log(`Всего товаров: ${allProducts.length}`);
 }
 
 async function closeCookieBanner(page) {
@@ -199,6 +207,63 @@ async function parseProductsByCategory(page) {
 
 	console.log(`Всего собрано: ${allProducts.length} товаров`);
 	return allProducts;
+}
+
+async function switchCityAndClose(page) {
+	try {
+		console.log('Переключаем город...');
+		await page.waitForSelector('.header-setting', {
+			timeout: 5000,
+			visible: true,
+		});
+
+		await page.$eval('.header-setting', element => element.click());
+
+		await page.waitForSelector('.text-field.select.readonly[data-v-8a2a7214]', {
+			timeout: 3000,
+		});
+
+		await page.$eval('.text-field.select.readonly[data-v-8a2a7214]', element =>
+			element.click()
+		);
+
+		await page.$$eval('.input__select-item', element => {
+			if (element.length > 1) {
+				element[1].click();
+			}
+		});
+
+		delay(2000);
+
+		console.log('Город переключен');
+
+		const thirdModalHandled = await modalHandlerWithRetry(
+			page,
+			'Выберите город',
+			'ОК',
+			2
+		);
+
+		if (thirdModalHandled) {
+			await waitForModalToClose(page);
+		} else {
+			console.log('Пропускаем модальное окно');
+		}
+	} catch (error) {
+		console.log('Ошибка при переключении города:', error.message);
+	}
+}
+
+function uniqueArray(array) {
+	const a = new Set();
+	return array.filter(item => {
+		const key = `${item.name}-${item.price}`;
+		if (a.has(key)) {
+			return false;
+		}
+		a.add(key);
+		return true;
+	});
 }
 
 parser();
